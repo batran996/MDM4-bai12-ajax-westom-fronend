@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.1/jquery.min.js"
+            integrity="sha512-aVKKRRi/Q/YV+4mjoKBsE4x3H+BkegoM/em46NNlCqNTmUYADjBbeNefNxYV7giUp0VxICtqdrbqU7iVaeZNXA=="
+            crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM"
+            crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"
+            integrity="sha384-IQsoLXl5PILFhosVNubq5LC7Qb9DXgDA9i+tQ8Zj3iwWAwPtgFTxbJ8NT4GN1R8p"
+            crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.min.js"
+            integrity="sha384-cVKIPhGWiC2Al4u+LWgxfKTRIcfu0JTxR+EQDz/bgldoEyl4H0zUF0QKbrJ0EcQF"
+            crossorigin="anonymous"></script>
+
+</head>
+<body>
+<div className="input-group flex-nowrap">
+    <span id="validate" style="color: red"></span><br>
+    <span className="input-group-text"> create Student</span> <br>
+    <span className="input-group-text" id="addon-wrapping"> name</span>
+    <input id="name" type="text" className="form-control" aria-describedby="addon-wrapping">
+    <span className="input-group-text"> age</span>
+    <input id="age" type="number" className="form-control" aria-describedby="addon-wrapping">
+    <span className="input-group-text"> address</span>
+    <input id="address" type="text" className="form-control" aria-describedby="addon-wrapping">
+    <input id="id" type="hidden">
+    <button id="create" class="btn btn-primary">create</button>
+    <span id="btn-create"></span>
+    <div id="demo"></div>
+
+</div>
+
+
+<script>
+    let size = 0
+    $(document).ready(function () {
+        editSmartPhone()
+        listSmartPhone()
+        pageSmartPhone()
+        let student = {}
+        let errExited = {
+            message: "name_exited"
+        }
+        let updateSuccess = {
+            message: "update_success!"
+        }
+        let createSuccess = {
+            message: "name_exited"
+        }
+        let optionMethod = '';
+        let optionURL = '';
+
+        $('#create').click(function () {
+            let name = $('#name').val()
+            let age = $('#age').val()
+            let address = $('#address').val()
+            if (name.trim() === "" || name.length < 3 || name.length > 20) {
+                document.getElementById("validate").innerHTML = "name is valid!"
+                return;
+            }
+            let id = $('#id').val()
+           if(id){
+               console.log('vao if khong')
+               optionMethod = 'PUT';
+               optionURL = 'http://localhost:8080/students/'+id;
+               console.log('optionMethod', optionMethod)
+           } else {
+               optionMethod = 'POST';
+               optionURL = 'http://localhost:8080/students'
+           }
+            student.name = name
+            student.age = age
+            student.address = address
+            console.log(student)
+            // khai bao bien studen object JS dde chuyen sang java
+
+            let studentObj = JSON.stringify(student)
+
+            console.log(studentObj)
+            $.ajax({
+                url: optionURL,
+                method: optionMethod,
+                contentType: "application/json; charset=UTF-8",
+                data: studentObj,
+                success: function (data) {
+                    console.log("---log data ----=>", data)
+                    if (JSON.stringify(data) == JSON.stringify(errExited)) {
+                        document.getElementById("validate").innerHTML = "Tên đã tồn tại"
+                        return
+                    }
+                    if (JSON.stringify(data) == JSON.stringify(createSuccess)) {
+                        document.getElementById("validate").innerHTML = "đã thêm thành công"
+                        pageSmartPhone()
+                        return;
+                    }
+                    if (JSON.stringify(data) == JSON.stringify(updateSuccess)) {
+                        document.getElementById("validate").innerHTML = "Update Success"
+                        pageSmartPhone()
+                    }
+                }
+
+
+            })
+        })
+    })
+
+    //GET LIST
+    function listSmartPhone() {
+        $.ajax({
+            async: false,
+            //do AJAX là bất động bộ nên phải thêm async: false để chuyển về đồng bộ
+            url: 'http://localhost:8080/students',
+            method: 'GET',
+            success: function (data) {
+
+                size = data.length;
+                console.log('size trong list == ', size)
+            }
+        })
+    }
+
+    //PAGINATION
+    function pageSmartPhone() {
+
+        $(function () {
+            console.log('size trong pagination ==', size)
+            let container = $('#demo');
+            container.pagination({
+                dataSource: 'http://localhost:8080/students',
+                locator: 'itemts',
+                totalNumber: size,
+                pageSize: 2,
+                callback: function (response, pagination) {
+                    let dataHtml = '<table border="1" class="table">'
+                        +'<tr class="table-success">' +
+                        '<th >STT</th>' +
+                        '<th >NAME</th>' +
+                        '<th>AGE</th>' +
+                        '<th>ADDRESS</th>' +
+                        '<th>EDIT</th>'+
+                        '</tr>'
+                        let pageStart = (pagination.pageNumber - 1) * pagination.pageSize;
+                    let pageEnd = pageStart + pagination.pageSize;
+                    let pageItems = response.slice(pageStart, pageEnd);
+                    $.each(pageItems, function (index, item) {
+                        dataHtml +=
+                            '<tr>' +
+                            '<td class="table-danger">' + '<p>' + item.id + '</p>' + '</td>' +
+                            '<td class="table-warning">' + '<p>' + item.name + '</p>' + '</td>' +
+                            '<td class="table-light">' + '<p>' + item.age + '</p>' + '</td>' +
+                            '<td class="table-light">' + '<p>' + item.address + '</p>' + '</td>' +
+                            '<td><button class="btn btn-primary" onclick="editSmartPhone('+item.id+')">Edit</button> </td>'+
+                            '</tr>'
+
+                    })
+                    dataHtml += '</table>';
+                    container.prev().html(dataHtml);
+                }
+            })
+        })
+    }
+    function editSmartPhone(id){
+        // document.getElementById('btn-create').innerHTML = 'EDIT'
+        $.ajax({
+            url: 'http://localhost:8080/students/'+id,
+            method: 'GET',
+            dataType: 'json',
+            success: function (data){
+                $('#name').val(data.name)
+                $('#age').val(data.age);
+                $('#address').val(data.address);
+                $('#id').val(data.id);
+                console.log("id---",id)
+            }
+        })
+    }
+
+
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/paginationjs/2.1.4/pagination.min.js"></script>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/paginationjs/2.1.4/pagination.css" rel="stylesheet"/>
+</body>
+</html>
